@@ -46,7 +46,10 @@ include_once ("../../sms1/lib/SendMsm.class.php");
 			
 		    $result = mysql_query("SELECT link FROM  smtbx_info  where  devicesn='$account' LIMIT 1",$db);  
 			$num= mysql_numrows ($result);
-			$link=mysql_result($result,0,"link");
+			// whl 判断num是否大于零，防止warning警告
+			if($num>0){
+				$link=mysql_result($result,0,"link");	
+			}
 			if($link<=0)
 			{
 			   $time=time();
@@ -88,7 +91,7 @@ include_once ("../../sms1/lib/SendMsm.class.php");
 //========================================    
 // 新订单
 //========================================  	
-	function ConfirmDeliveryExRequest($itemId,$terminalId ,$boxId,$deliveryInfo,$operatorId,$localTime,$ordersn,$starttime,$infostatus,$kuaidi)
+	function ConfirmDeliveryExRequest($itemId,$terminalId ,$boxId,$deliveryInfo,$operatorId,$localTime,$ordersn,$starttime,$infostatus,$kuaidi,$main_username)
 	{
 	
 	     if($_SESSION['LOGIN']!="OK")
@@ -129,7 +132,7 @@ include_once ("../../sms1/lib/SendMsm.class.php");
     $result = mysql_query($sqlstr,$db2);    
 	$msmcontent=mysql_result($result,0,"msmcontent"); 
 	 //获得投递员账户的短信内容   
-	$sqlstr="SELECT smscontent FROM `user` WHERE `username` LIKE '$operatorId' LIMIT 1";
+	$sqlstr="SELECT smscontent FROM `user` WHERE `username` LIKE '$main_username' LIMIT 1";
     $result = mysql_query($sqlstr,$db);    
 	$smscontent=mysql_result($result,0,"smscontent"); 	
 
@@ -313,7 +316,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 //========================================    
 // 完成订单（取回包裹）
 //========================================  	
-	function GetbackItemRequest($itemId,$terminalId ,$boxId,$operatorId,$localTime,$ordersn,$endtime,$pickup,$status,$rcvnumber,$infostatus)
+	function GetbackItemRequest($itemId,$terminalId ,$boxId,$operatorId,$localTime,$ordersn,$endtime,$pickup,$status,$rcvnumber,$infostatus,$main_username)
 	{
 	    $sss=$localTime.",".$ordersn.",".$endtime.",".$pickup;
 	     if($_SESSION['LOGIN']!="OK")
@@ -386,7 +389,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 		    	//whl 发送短信
 		    	$stationid = getStationId($terminalId,$db);
 		    	if($stationid){
-		    		$res = SendMsm::sendOneSMSforBox($rcvnumber, $content, $operatorId, $terminalId, $boxId,'',$stationid,1,$content,$itemId,'',1);
+		    		$res = SendMsm::sendOneSMSforBox($rcvnumber, $content, $main_username, $terminalId, $boxId,'',$stationid,1,$content,$itemId,'',1);
 		    		$resjson = json_decode($res,true);
 		    		$res = $resjson['status']==0 ? 1 : 0;
 		    		$msm_sn = $resjson['msm_sn'];
@@ -434,7 +437,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 	
 	}
 	
-	if(($status=="6")&&(($pickup=="3")||($pickup=="2")||($pickup=="4")))
+	if(($status=="6")&&(($pickup=="3")||($pickup=="2")||($pickup=="4")||($pickup=="5")||($pickup=="6")))
 	{
 	       $result = mysql_query("SELECT * FROM  stations_manage   where  allbox  like '%$terminalId%' ",$db4);  
            $num= mysql_numrows ($result);
@@ -446,7 +449,8 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 		      if($num!=0)
 			  {
 			  	$id=mysql_result($result,0,"id");	
-		      	$sqlstr="UPDATE `logistics` SET  `distributeway` = '0'  WHERE `id` ='$id' LIMIT 1";							
+		      	// whl添加修改退件人和退件时间	
+		      	$sqlstr="UPDATE `logistics` SET  `signingtime` = '$localTime',`signinguser` = '$operatorId' ,`distributeway` = '0'  WHERE `id` ='$id' LIMIT 1";							
 			  	mysql_query($sqlstr,$db4);  			  
 			  }		    
 		   }	 
@@ -470,7 +474,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 //========================================    
 // 再次发送短信
 //========================================  	
-	function OrderSendMsmAgain($itemId,$terminalId,$rcvnumber,$operatorId,$localTime,$ordersn,$sentmsmflg)
+	function OrderSendMsmAgain($itemId,$terminalId,$rcvnumber,$operatorId,$localTime,$ordersn,$sentmsmflg,$main_username)
 	{	
 	     if($_SESSION['LOGIN']!="OK")
 		 {
@@ -504,7 +508,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
     $result = mysql_query($sqlstr,$db2);    
 	$msmcontent=mysql_result($result,0,"msmcontent"); 
 	 //获得投递员账户的短信内容   
-	$sqlstr="SELECT smscontent FROM `user` WHERE `username` LIKE '$operatorId' LIMIT 1";
+	$sqlstr="SELECT smscontent FROM `user` WHERE `username` LIKE '$main_username' LIMIT 1";
     $result = mysql_query($sqlstr,$db);    
 	$smscontent=mysql_result($result,0,"smscontent"); 		
 
@@ -529,12 +533,12 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 	{
 	  	//发送短信
 		// 判断用户费用是否充足否则不让发。
-		$checkres = checkCharge($terminalId,$operatorId,$boxId,$db);
+		$checkres = checkCharge($terminalId,$main_username,$boxId,$db);
 		if($checkres){
 	    	//whl 发送短信
 	    	$stationid = getStationId($terminalId,$db);
 	    	if($stationid){
-	    		$res = SendMsm::sendOneSMSforBox($rcvnumber, $m_content, $operatorId, $terminalId, $boxId,'',$stationid,1,$m_content,$itemId,$passwordsms,1);
+	    		$res = SendMsm::sendOneSMSforBox($rcvnumber, $m_content, $main_username, $terminalId, $boxId,'',$stationid,1,$m_content,$itemId,$passwordsms,1);
 	    		$resjson = json_decode($res,true);
 	    		$res = $resjson['status']==0 ? 1 : 0;
 	    		$msm_sn = $resjson['msm_sn'];
@@ -843,129 +847,192 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 			
 		 $res=10;     
          $result = mysql_query("SELECT * FROM user  where  $str limit 1",$db); 		 			  
-         $num= mysql_numrows($result);
-		 if($num==0)
-		 {
-		    $res=13;  //用户不存在			 
-		 }
-		 else if($type==0)
-		 {
-		    $pw=mysql_result($result,0,"password");
-			$activation=mysql_result($result,0,"activation");
-			if($pw!=$password)
-			{
-			  $res=14;  //密码不正确 			
-			}
-			else if($activation==0)
-			{
-			  $res=13;  //用户不存在	在没激活的状态下认为用户不存在
-			}
-			else
-			{
-				$name=mysql_result($result,0,"name");
-				$company=mysql_result($result,0,"company");	
-				$fund=mysql_result($result,0,"fund");
-				
-				$kuaidi=mysql_result($result,0,"kuaidi");   //格式例子：  1011,圆通快递,1012,顺丰快递
-				$rate=mysql_result($result,0,"rate");
-				$identitycard=mysql_result($result,0,"identitycard");	
-				$cardid=mysql_result($result,0,"cardid");
-				$password=mysql_result($result,0,"password");												
-				$operatorId=mysql_result($result,0,"username");
-				
-				//若该智能柜为站点用户，将获取该站点的快递设置
-				//说明： 若该智能柜是站点柜子，那么快递公司的名称将以站点为准
-				$result = mysql_query("SELECT * FROM  dyhawk.stations_manage   where  allbox  like '%$terminalId%' ",$db);  
-                $num= mysql_numrows ($result);
-				
-				if($num!=0)
-				{
-				    $stationaccount=mysql_result($result,0,"account");				
-				    $result = mysql_query("SELECT * FROM  dyhawk.expresselct  where  stationaccount='$stationaccount'",$db);  
-                    $num= mysql_numrows ($result);
-					$kuaidi="";
-					for($i=0;$i<$num;$i++)
-					{
-					    $code=mysql_result($result,$i,"code");
-					    $kname=mysql_result($result,$i,"name");
-					    $kuaidi=$kuaidi.$code.",".$kname.",";
-					} 			
-				}
-												
-				//获取该站点的格口、短信计费设置
-	            $result = mysql_query("SELECT * FROM  smartbox.smtbx_info where  devicesn='$terminalId'",$db); 	
-				$gekouratestr="";	 			  
-                $num= mysql_numrows($result);
-				 if($num!=0)
-				{
-				   $small=mysql_result($result,0,"small");
-				   $middle=mysql_result($result,0,"middle");
-				   $large=mysql_result($result,0,"large"); 
-				   $smssend=mysql_result($result,0,"smssend");
-				   $gekouratestr=$small.",".$middle.",".$large.",".$smssend.",";	   
-				}			
-							
-			    $res=11;  //一切正确 	
-			} 
-		 }
-		 else
-		 {
-				$name=mysql_result($result,0,"name");
-				$company=mysql_result($result,0,"company");	
-				$fund=mysql_result($result,0,"fund");
-				
-				$kuaidi=mysql_result($result,0,"kuaidi");   //格式例子：  1011,圆通快递,1012,顺丰快递
-				$rate=mysql_result($result,0,"rate");
-				$identitycard=mysql_result($result,0,"identitycard");	
-				$cardid=mysql_result($result,0,"cardid");
-				$password=mysql_result($result,0,"password");
-				$operatorId=mysql_result($result,0,"username");				
-				
-				//若该智能柜为站点用户，将获取该站点的快递设置
-				//说明： 若该智能柜是站点柜子，那么快递公司的名称将以站点为准
-				$result = mysql_query("SELECT * FROM  dyhawk.stations_manage   where  allbox  like '%$terminalId%' ",$db);  
-                $num= mysql_numrows ($result);
-				
-				if($num!=0)
-				{
-				    $stationaccount=mysql_result($result,0,"account");				
-				    $result = mysql_query("SELECT * FROM  dyhawk.expresselct  where  stationaccount='$stationaccount'",$db);  
-                    $num= mysql_numrows ($result);
-					$kuaidi="";
-					for($i=0;$i<$num;$i++)
-					{
-					    $code=mysql_result($result,$i,"code");
-					    $kname=mysql_result($result,$i,"name");
-					    $kuaidi=$kuaidi.$code.",".$kname.",";
-					} 			
-				}
-												
-				//获取该站点的格口、短信计费设置
-	            $result = mysql_query("SELECT * FROM  smartbox.smtbx_info where  devicesn='$terminalId'",$db); 	
-				$gekouratestr="";	 			  
-                $num= mysql_numrows($result);
-				 if($num!=0)
-				{
-				   $small=mysql_result($result,0,"small");
-				   $middle=mysql_result($result,0,"middle");
-				   $large=mysql_result($result,0,"large"); 
-				   $smssend=mysql_result($result,0,"smssend");
-				   $gekouratestr=$small.",".$middle.",".$large.",".$smssend.",";	   
-				}			
-							
-			    $res=11;  //一切正确 		 
+		 $num= mysql_numrows($result);
 
-		 }
+		 $operatorId_get = $operatorId;
+
+         if($num>0){
+         	// whl如果是主账户登录就查询该主账户的所有子账户
+			$child_usernames = getAllChildUsername($operatorId,$db); 
+			if($type==0)
+			 {
+			    $pw=mysql_result($result,0,"password");
+				$activation=mysql_result($result,0,"activation");
+				if($pw!=$password)
+				{
+				  $res=14;  //密码不正确 			
+				}
+				else if($activation==0)
+				{
+				  $res=13;  //用户不存在	在没激活的状态下认为用户不存在
+				}
+				else
+				{
+					$company=mysql_result($result,0,"company");	
+					$fund=mysql_result($result,0,"fund");
+					$name=mysql_result($result,0,"name");  
+					$kuaidi=mysql_result($result,0,"kuaidi");   //格式例子：  1011,圆通快递,1012,顺丰快递
+					$rate=mysql_result($result,0,"rate");
+					$identitycard=mysql_result($result,0,"identitycard");	
+					$cardid=mysql_result($result,0,"cardid");
+					$password=mysql_result($result,0,"password");												
+					$operatorId=mysql_result($result,0,"username");
+
+					
+					//若该智能柜为站点用户，将获取该站点的快递设置
+					//说明： 若该智能柜是站点柜子，那么快递公司的名称将以站点为准
+					$result = mysql_query("SELECT * FROM  dyhawk.stations_manage   where  allbox  like '%$terminalId%' ",$db);  
+	                $num= mysql_numrows ($result);
+					
+					if($num!=0)
+					{
+					    $stationaccount=mysql_result($result,0,"account");				
+					    $result = mysql_query("SELECT * FROM  dyhawk.expresselct  where  stationaccount='$stationaccount'",$db);  
+	                    $num= mysql_numrows ($result);
+						$kuaidi="";
+						for($i=0;$i<$num;$i++)
+						{
+						    $code=mysql_result($result,$i,"code");
+						    $kname=mysql_result($result,$i,"name");
+						    $kuaidi=$kuaidi.$code.",".$kname.",";
+						} 			
+					}
+													
+					//获取该站点的格口、短信计费设置
+		            $result = mysql_query("SELECT * FROM  smartbox.smtbx_info where  devicesn='$terminalId'",$db); 	
+					$gekouratestr="";	 			  
+	                $num= mysql_numrows($result);
+					 if($num!=0)
+					{
+					   $small=mysql_result($result,0,"small");
+					   $middle=mysql_result($result,0,"middle");
+					   $large=mysql_result($result,0,"large"); 
+					   $smssend=mysql_result($result,0,"smssend");
+					   $gekouratestr=$small.",".$middle.",".$large.",".$smssend.",";	   
+					}			
+								
+				    $res=11;  //一切正确 	
+				} 
+			 }
+			 else
+			 {
+					$name=mysql_result($result,0,"name");
+					$company=mysql_result($result,0,"company");	
+					$fund=mysql_result($result,0,"fund");
+					
+					$kuaidi=mysql_result($result,0,"kuaidi");   //格式例子：  1011,圆通快递,1012,顺丰快递
+					$rate=mysql_result($result,0,"rate");
+					$identitycard=mysql_result($result,0,"identitycard");	
+					$cardid=mysql_result($result,0,"cardid");
+					$password=mysql_result($result,0,"password");
+					$operatorId=mysql_result($result,0,"username");				
+					
+					//若该智能柜为站点用户，将获取该站点的快递设置
+					//说明： 若该智能柜是站点柜子，那么快递公司的名称将以站点为准
+					$result = mysql_query("SELECT * FROM  dyhawk.stations_manage   where  allbox  like '%$terminalId%' ",$db);  
+	                $num= mysql_numrows ($result);
+					
+					if($num!=0)
+					{
+					    $stationaccount=mysql_result($result,0,"account");				
+					    $result = mysql_query("SELECT * FROM  dyhawk.expresselct  where  stationaccount='$stationaccount'",$db);  
+	                    $num= mysql_numrows ($result);
+						$kuaidi="";
+						for($i=0;$i<$num;$i++)
+						{
+						    $code=mysql_result($result,$i,"code");
+						    $kname=mysql_result($result,$i,"name");
+						    $kuaidi=$kuaidi.$code.",".$kname.",";
+						} 			
+					}
+													
+					//获取该站点的格口、短信计费设置
+		            $result = mysql_query("SELECT * FROM  smartbox.smtbx_info where  devicesn='$terminalId'",$db); 	
+					$gekouratestr="";	 			  
+	                $num= mysql_numrows($result);
+					 if($num!=0)
+					{
+					   $small=mysql_result($result,0,"small");
+					   $middle=mysql_result($result,0,"middle");
+					   $large=mysql_result($result,0,"large"); 
+					   $smssend=mysql_result($result,0,"smssend");
+					   $gekouratestr=$small.",".$middle.",".$large.",".$smssend.",";	   
+					}			
+								
+				    $res=11;  //一切正确 		 
+
+			 }    	
+         }else{
+         	// whl如果没有查到主账户就去子账户表查询
+         	$child_username = $operatorId_get;
+         	$data = searchChildUsername($child_username,$password,$db);
+         	if($data){
+         		if($data['status']==1){
+         			$parent_username = $data['parent_username'];
+         			$name = $data['name'];
+         			$result = mysql_query("SELECT * FROM user  where  username='$parent_username' limit 1",$db);
+
+					$company=mysql_result($result,0,"company");	
+					$fund=mysql_result($result,0,"fund");
+					$kuaidi=mysql_result($result,0,"kuaidi");   //格式例子：  1011,圆通快递,1012,顺丰快递
+					$rate=mysql_result($result,0,"rate");
+					$identitycard=mysql_result($result,0,"identitycard");	
+					$cardid=mysql_result($result,0,"cardid");
+					$password=mysql_result($result,0,"password");												
+					$operatorId=mysql_result($result,0,"username");
+
+					
+					//若该智能柜为站点用户，将获取该站点的快递设置
+					//说明： 若该智能柜是站点柜子，那么快递公司的名称将以站点为准
+					$result = mysql_query("SELECT * FROM  dyhawk.stations_manage   where  allbox  like '%$terminalId%' ",$db);  
+	                $num= mysql_numrows ($result);
+					
+					if($num!=0)
+					{
+					    $stationaccount=mysql_result($result,0,"account");				
+					    $result = mysql_query("SELECT * FROM  dyhawk.expresselct  where  stationaccount='$stationaccount'",$db);  
+	                    $num= mysql_numrows ($result);
+						$kuaidi="";
+						for($i=0;$i<$num;$i++)
+						{
+						    $code=mysql_result($result,$i,"code");
+						    $kname=mysql_result($result,$i,"name");
+						    $kuaidi=$kuaidi.$code.",".$kname.",";
+						} 			
+					}
+													
+					//获取该站点的格口、短信计费设置
+		            $result = mysql_query("SELECT * FROM  smartbox.smtbx_info where  devicesn='$terminalId'",$db); 	
+					$gekouratestr="";	 			  
+	                $num= mysql_numrows($result);
+					 if($num!=0)
+					{
+					   $small=mysql_result($result,0,"small");
+					   $middle=mysql_result($result,0,"middle");
+					   $large=mysql_result($result,0,"large"); 
+					   $smssend=mysql_result($result,0,"smssend");
+					   $gekouratestr=$small.",".$middle.",".$large.",".$smssend.",";	   
+					}			
+								
+				    $res=11;  //一切正确 	
+         		}else{
+         			$res=14;  //密码不正确
+         		}
+         	}else{
+         		$res=13;  //用户不存在
+         	}	
+         }
+
 		 	   
 		 $response["responseCode"]="0";
 		 $response["response"]="$res";	
 		 				
 	    $time=time(); 
- $response["operatorInfo"]=array("operatorId"=>"$operatorId","operatorName"=>urlencode("$name"),"orgnizationId"=>"","orgnization"=>urlencode("$company"),"fund"=>"$fund","kuaidi"=>urlencode("$kuaidi"),"rate"=>"$rate","gekouratestr"=>urlencode("$gekouratestr"),"time"=>"$time","cardid"=>"$cardid","identitycard"=>"$identitycard","password"=>"$password");			 
+ $response["operatorInfo"]=array("operatorId"=>"$operatorId_get","operatorName"=>urlencode("$name"),"orgnizationId"=>"","orgnization"=>urlencode("$company"),"fund"=>"$fund","kuaidi"=>urlencode("$kuaidi"),"rate"=>"$rate","gekouratestr"=>urlencode("$gekouratestr"),"time"=>"$time","cardid"=>"$cardid","identitycard"=>"$identitycard","password"=>"$password","child_usernames"=>"$child_usernames","main_username"=>"$parent_username");			 
 		 		 
 		 				 		 	 			    
 	//返回信息     	
-	return 	$response;							
+	return 	$response;						
 	}
 
 //========================================    
@@ -1201,5 +1268,39 @@ function checkCharge($devicesn,$username,$boxId,$db){
 
 }
 
+// whl查询子账户是否存在，如果存在传回总账户号
+function searchChildUsername($child_username,$pwd,$db){
+	$res = mysql_query("SELECT parent_username,name,password from deeyee.user_child where child_username='$child_username' and status=0 limit 1",$db);
+	if(mysql_num_rows($res)>0){
+		$data['parent_username'] = mysql_result($res,0, 'parent_username');
+		$data['name'] = mysql_result($res,0, 'name');
+		$data['password'] = mysql_result($res,0, 'password');
+		if($pwd==$data['password']){
+			$data['status']=1;
+		}else{
+			$data['status']=0;//密码不正确
+		}
+		return $data;
+	}
+	return false;
+}
+
+// whl查询总账户的所有子账户，用逗号拼接成字符串返回。
+function getAllChildUsername($username,$db){
+	$res = mysql_query("SELECT child_username from deeyee.user_child where parent_username='$username' and status=0",$db);
+	$num = mysql_num_rows($res);
+	file_put_contents('./b.log', '123');
+	$child_usernames = '';
+	if($num>0){
+		for($i=0;$i<$num;$i++){
+			$child_username = mysql_result($res,$i, 'child_username');
+			$child_usernames.=$child_username.',';
+		}
+		$child_usernames = trim($child_usernames,',');
+		return $child_usernames;
+	}else{
+		return false;
+	}
+}
 
 ?>
