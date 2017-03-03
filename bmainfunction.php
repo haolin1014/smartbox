@@ -389,7 +389,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 		    	//whl 发送短信
 		    	$stationid = getStationId($terminalId,$db);
 		    	if($stationid){
-		    		$res = SendMsm::sendOneSMSforBox($rcvnumber, $content, $main_username, $terminalId, $boxId,'',$stationid,1,$content,$itemId,'',1);
+		    		$res = SendMsm::sendOneSMSforBox($rcvnumber, $content, $main_username, $terminalId, $boxId,'',$stationid,'0',$content,$itemId,'',1);
 		    		$resjson = json_decode($res,true);
 		    		$res = $resjson['status']==0 ? 1 : 0;
 		    		$msm_sn = $resjson['msm_sn'];
@@ -448,8 +448,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 		      $num= mysql_numrows ($result);
 		      if($num!=0)
 			  {
-			  	$id=mysql_result($result,0,"id");	
-		      	// whl添加修改退件人和退件时间	
+			  	$id=mysql_result($result,0,"id");
 		      	$sqlstr="UPDATE `logistics` SET  `distributeway` = '0'  WHERE `id` ='$id' LIMIT 1";							
 			  	mysql_query($sqlstr,$db4);  			  
 			  }		    
@@ -538,7 +537,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 	    	//whl 发送短信
 	    	$stationid = getStationId($terminalId,$db);
 	    	if($stationid){
-	    		$res = SendMsm::sendOneSMSforBox($rcvnumber, $m_content, $main_username, $terminalId, $boxId,'',$stationid,1,$m_content,$itemId,$passwordsms,1);
+	    		$res = SendMsm::sendOneSMSforBox($rcvnumber, $m_content, $main_username, $terminalId, $boxId,'',$stationid,'0',$m_content,$itemId,$passwordsms,1);
 	    		$resjson = json_decode($res,true);
 	    		$res = $resjson['status']==0 ? 1 : 0;
 	    		$msm_sn = $resjson['msm_sn'];
