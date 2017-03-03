@@ -245,8 +245,8 @@ include_once ("../../sms1/lib/SendMsm.class.php");
 			 
 		     if($num==0)
 		     {  //在插入状态，将duanxintime同时插入diandantime
-		        $sqlstr="INSERT INTO `logistics` (`pdasn`, `stationaccount`,`expressno`,`diandantime`,`diandanuser`,`phonenumber`,`distributeway`,`distributeuser`,`distributetime`,`huohao`,`msm_sn`,`expressname`,`onlinetime`) 
-VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId', '$rcvnumber','2','$operatorId', '$localTime','$boxId','$msm_sn','$kuaidi','$onlinetime')";								  								                mysql_query($sqlstr,$db4); 
+		        $sqlstr="INSERT INTO `logistics` (`pdasn`, `stationaccount`,`expressno`,`diandantime`,`diandanuser`,`phonenumber`,`distributeway`,`distributeuser`,`distributetime`,`huohao`,`msm_sn`,`expressname`,`onlinetime`,`smstatus`) 
+VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId', '$rcvnumber','2','$operatorId', '$localTime','$boxId','$msm_sn','$kuaidi','$onlinetime','1')";								  								                mysql_query($sqlstr,$db4); 
  	
 		   	  }
 		   	  else
@@ -257,7 +257,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 				   $expressname=$kuaidi;  
 				}    			  
 		        $id=mysql_result($result,0,"id");	
-		        $sqlstr="UPDATE `logistics` SET   `pdasn` = '$terminalId',`phonenumber` = '$rcvnumber',`distributeway`='2',`distributetime` = '$localTime',`distributeuser` = '$operatorId',`huohao` = '$boxId' ,`msm_sn` = '$msm_sn',`expressname` = '$expressname'  WHERE `id` ='$id' LIMIT 1";								  							              
+		        $sqlstr="UPDATE `logistics` SET   `pdasn` = '$terminalId',`phonenumber` = '$rcvnumber',`distributeway`='2',`distributetime` = '$localTime',`distributeuser` = '$operatorId',`huohao` = '$boxId' ,`msm_sn` = '$msm_sn',`expressname` = '$expressname',`smstatus`='1'  WHERE `id` ='$id' LIMIT 1";								  							              
 				 mysql_query($sqlstr,$db4);  			   
 		      } 	
 			
