@@ -437,7 +437,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 	
 	}
 	
-	if(($status=="6")&&(($pickup=="3")||($pickup=="2")||($pickup=="4")||($pickup=="5")||($pickup=="6")))
+	if(($status=="6")&&(($pickup=="3")||($pickup=="2")||($pickup=="4")))
 	{
 	       $result = mysql_query("SELECT * FROM  stations_manage   where  allbox  like '%$terminalId%' ",$db4);  
            $num= mysql_numrows ($result);
@@ -450,7 +450,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 			  {
 			  	$id=mysql_result($result,0,"id");	
 		      	// whl添加修改退件人和退件时间	
-		      	$sqlstr="UPDATE `logistics` SET  `signingtime` = '$localTime',`signinguser` = '$operatorId' ,`distributeway` = '0'  WHERE `id` ='$id' LIMIT 1";							
+		      	$sqlstr="UPDATE `logistics` SET  `distributeway` = '0'  WHERE `id` ='$id' LIMIT 1";							
 			  	mysql_query($sqlstr,$db4);  			  
 			  }		    
 		   }	 
