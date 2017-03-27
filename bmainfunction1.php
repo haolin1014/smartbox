@@ -188,12 +188,12 @@ include_once ("../../sms1/lib/SendMsm.class.php");
                 
 	{
 		// 判断用户费用是否充足否则不让发。
-		$checkres = checkCharge($terminalId,$main_username,$boxId,$db);
+		$checkres = checkCharge($terminalId,$operatorId,$boxId,$db);
 		if($checkres){
 	    	//whl 发送短信
 	    	$stationid = getStationId($terminalId,$db);
 	    	if($stationid){
-	    		$res = SendMsm::sendOneSMSforBox($rcvnumber, $m_content, $main_username, $terminalId, $boxId,'',$stationid,1,$m_content,$itemId,$password,1);
+	    		$res = SendMsm::sendOneSMSforBox($rcvnumber, $m_content, $operatorId, $terminalId, $boxId,'',$stationid,1,$m_content,$itemId,$password,1);
 	    		$resjson = json_decode($res,true);
 	    		$res = $resjson['status']==0 ? 1 : 0;
 	    		$msm_sn = $resjson['msm_sn'];
@@ -245,8 +245,8 @@ include_once ("../../sms1/lib/SendMsm.class.php");
 			 
 		     if($num==0)
 		     {  //在插入状态，将duanxintime同时插入diandantime
-		        $sqlstr="INSERT INTO `logistics` (`pdasn`, `stationaccount`,`expressno`,`diandantime`,`diandanuser`,`phonenumber`,`distributeway`,`distributeuser`,`distributetime`,`huohao`,`msm_sn`,`expressname`,`onlinetime`,`smstatus`) 
-VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId', '$rcvnumber','2','$operatorId', '$localTime','$boxId','$msm_sn','$kuaidi','$onlinetime','1')";								  								                mysql_query($sqlstr,$db4); 
+		        $sqlstr="INSERT INTO `logistics` (`pdasn`, `stationaccount`,`expressno`,`diandantime`,`diandanuser`,`phonenumber`,`distributeway`,`distributeuser`,`distributetime`,`huohao`,`msm_sn`,`expressname`,`onlinetime`) 
+VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId', '$rcvnumber','2','$operatorId', '$localTime','$boxId','$msm_sn','$kuaidi','$onlinetime')";								  								                mysql_query($sqlstr,$db4); 
  	
 		   	  }
 		   	  else
@@ -257,7 +257,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 				   $expressname=$kuaidi;  
 				}    			  
 		        $id=mysql_result($result,0,"id");	
-		        $sqlstr="UPDATE `logistics` SET   `pdasn` = '$terminalId',`phonenumber` = '$rcvnumber',`distributeway`='2',`distributetime` = '$localTime',`distributeuser` = '$operatorId',`huohao` = '$boxId' ,`msm_sn` = '$msm_sn',`expressname` = '$expressname',`smstatus`='1'  WHERE `id` ='$id' LIMIT 1";								  							              
+		        $sqlstr="UPDATE `logistics` SET   `pdasn` = '$terminalId',`phonenumber` = '$rcvnumber',`distributeway`='2',`distributetime` = '$localTime',`distributeuser` = '$operatorId',`huohao` = '$boxId' ,`msm_sn` = '$msm_sn',`expressname` = '$expressname'  WHERE `id` ='$id' LIMIT 1";								  							              
 				 mysql_query($sqlstr,$db4);  			   
 		      } 	
 			
@@ -362,7 +362,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 	  $msmcontentr="您的快件在智能柜中长时间未取已退出，请及时取件。";
 	} 		 
 		 //获得投递员账户的短信内容   
-	$sqlstr="SELECT smscontent FROM `user` WHERE `username` LIKE '$main_username' LIMIT 1";
+	$sqlstr="SELECT smscontent FROM `user` WHERE `username` LIKE '$operatorId' LIMIT 1";
     $result = mysql_query($sqlstr,$db);    
 	$smscontent=mysql_result($result,0,"smscontent");
 
@@ -384,7 +384,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 	  		//sendonemsm($rcvnumber,$content,$operatorId,$terminalId,$msm_sn);	 //该行为非测试代码
 			// resendOneSMSforBox($rcvnumber,$content,$operatorId,$terminalId,$msm_sn,$boxId,$db);
 				// 判断用户费用是否充足否则不让发。
-			$checkres = checkCharge($terminalId,$main_username,$boxId,$db);
+			$checkres = checkCharge($terminalId,$operatorId,$boxId,$db);
 			if($checkres){
 		    	//whl 发送短信
 		    	$stationid = getStationId($terminalId,$db);
@@ -432,10 +432,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 				 mysql_query($sqlstr,$db4);  			   
 		   } 				  
 	
-		 }
-
-		 // 订单完成微信推送
-		add_wxnoticestatus($itemId,$rcvnumber,'1',$stationaccount,$db);		 				  
+		 }				  
      //----------
 	
 	}
@@ -773,7 +770,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 				if($num!=0)
 				{
 				    $stationaccount=mysql_result($result,0,"account");				
-				    $result = mysql_query("SELECT * FROM  dyhawk.expresselct  where  stationaccount='$stationaccount' and  status=0 ",$db);  
+				    $result = mysql_query("SELECT * FROM  dyhawk.expresselct  where  stationaccount='$stationaccount'",$db);  
                     $num= mysql_numrows ($result);
 					$kuaidi="";
 					for($i=0;$i<$num;$i++)
@@ -889,7 +886,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 					if($num!=0)
 					{
 					    $stationaccount=mysql_result($result,0,"account");				
-					    $result = mysql_query("SELECT * FROM  dyhawk.expresselct  where  stationaccount='$stationaccount' and  status=0 ",$db);  
+					    $result = mysql_query("SELECT * FROM  dyhawk.expresselct  where  stationaccount='$stationaccount'",$db);  
 	                    $num= mysql_numrows ($result);
 						$kuaidi="";
 						for($i=0;$i<$num;$i++)
@@ -937,7 +934,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 					if($num!=0)
 					{
 					    $stationaccount=mysql_result($result,0,"account");				
-					    $result = mysql_query("SELECT * FROM  dyhawk.expresselct  where  stationaccount='$stationaccount' and  status=0 ",$db);  
+					    $result = mysql_query("SELECT * FROM  dyhawk.expresselct  where  stationaccount='$stationaccount'",$db);  
 	                    $num= mysql_numrows ($result);
 						$kuaidi="";
 						for($i=0;$i<$num;$i++)
@@ -992,7 +989,7 @@ VALUES ('$terminalId','$stationaccount', '$itemId', '$starttime', '$operatorId',
 					if($num!=0)
 					{
 					    $stationaccount=mysql_result($result,0,"account");				
-					    $result = mysql_query("SELECT * FROM  dyhawk.expresselct  where  stationaccount='$stationaccount' and  status=0 ",$db);  
+					    $result = mysql_query("SELECT * FROM  dyhawk.expresselct  where  stationaccount='$stationaccount'",$db);  
 	                    $num= mysql_numrows ($result);
 						$kuaidi="";
 						for($i=0;$i<$num;$i++)
@@ -1304,9 +1301,5 @@ function getAllChildUsername($username,$db){
 		return false;
 	}
 }
-// 完成订单微信推送 whl 2017.3.10
-function add_wxnoticestatus($expressno,$number,$status,$stationaccount,$db){
-	$wxnoticestatus = "INSERT INTO kmsmsend.noticestatus ( `number`,`mobile`,`status`,`stationaccount`) VALUES ('$expressno','$number', '$status','$stationaccount')";
-	mysql_query($wxnoticestatus, $db);
-}
+
 ?>

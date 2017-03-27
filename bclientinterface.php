@@ -55,7 +55,8 @@ case  "ConfirmDeliveryExRequest":
 	  $deliveryInfo=$json3["deliveryInfo"];
 	  $infostatus=$json3["infostatus"];	
 	  $kuaidi=$json3["kuaidi"];	  	    
-	  $res=ConfirmDeliveryExRequest($itemId,$terminalId ,$boxId,$deliveryInfo,$operatorId,$localTime,$ordersn,$starttime,$infostatus,$kuaidi);
+	  $main_username=$json3["main_username"];	  	    
+	  $res=ConfirmDeliveryExRequest($itemId,$terminalId ,$boxId,$deliveryInfo,$operatorId,$localTime,$ordersn,$starttime,$infostatus,$kuaidi,$main_username);
 break;
 case  "GetbackItemRequest":	  
 	  $itemId=$json3["itemId"];
@@ -69,7 +70,8 @@ case  "GetbackItemRequest":
 	  $status=$json3["status"];
 	  $rcvnumber=$json3["rcvnumber"];
 	  $infostatus=$json3["infostatus"];	  
-	  $res=GetbackItemRequest($itemId,$terminalId ,$boxId,$operatorId,$localTime,$ordersn,$endtime,$pickup,$status,$rcvnumber,$infostatus);
+	  $main_username=$json3["main_username"];	  
+	  $res=GetbackItemRequest($itemId,$terminalId ,$boxId,$operatorId,$localTime,$ordersn,$endtime,$pickup,$status,$rcvnumber,$infostatus,$main_username);
 break;
 case  "OrderSendMsmAgain":
        $itemId=$json3["itemId"];
@@ -78,8 +80,9 @@ case  "OrderSendMsmAgain":
 	   $operatorId=$json3["operatorId"];
 	   $localTime=$json3["localTime"];
 	   $ordersn=$json3["ordersn"];
-	   $sentmsmflg=$json3["sentmsmflg"];    
-       $res=OrderSendMsmAgain($itemId,$terminalId,$rcvnumber,$operatorId,$localTime,$ordersn,$sentmsmflg);
+	   $sentmsmflg=$json3["sentmsmflg"];  
+	   $main_username=$json3["main_username"];  
+       $res=OrderSendMsmAgain($itemId,$terminalId,$rcvnumber,$operatorId,$localTime,$ordersn,$sentmsmflg,$main_username);
 break;
 
 case  "UploadSystemSetting":
